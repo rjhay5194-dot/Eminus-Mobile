@@ -1,0 +1,33 @@
+name: Build Eminus Mobile 1.21.11
+on:
+  workflow_dispatch:
+  push:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+      - name: Fetch upstream Eminus 1.21.1 source
+        run: |
+          git clone --depth 1 --branch mc/1.21 https://github.com/anyttng/eminus.git upstream
+      - name: Apply automated 1.21.11/mobile preparation
+        run: python3 scripts/prepare.py upstream
+      - name: Build
+        working-directory: upstream
+        run: chmod +x gradlew && ./gradlew :fabric:build --no-daemon --stacktrace
+      - name: Upload build and logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eminus-mobile-build
+          path: |
+            upstream/fabric/build/libs/*.jar
+            upstream/**/build/reports/**
+            upstream/**/build/test-results/**
